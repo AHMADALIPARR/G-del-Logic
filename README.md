@@ -1,6 +1,6 @@
 # Gödel Logic
 
-A small logic engine that rewrites itself, and only when it can prove the rewrite is better. This repo holds two Lean 4 projects. `GodelMachine.lean` is the self-rewriting kernel: new code arrives as a single number, and the kernel installs it only if it has a machine-checked proof that the new program gives the same answers, is smaller, and costs no more. `logos-lab/` is a second, separate Lean project that builds a logic engine as a plain step-by-step machine, with unification, cut, a weight guard, a solver that always stops, and a checker that replays a trace and proves it sound.
+A small logic engine that rewrites itself, and only when it can prove the rewrite is better. This repo holds two Lean 4 projects. `godel-machine/GodelMachine.lean` is the self-rewriting kernel: new code arrives as a single number, and the kernel installs it only if it has a machine-checked proof that the new program gives the same answers, is smaller, and costs no more. `logos-lab/` is a second, separate Lean project that builds a logic engine as a plain step-by-step machine, with unification, cut, a weight guard, a solver that always stops, and a checker that replays a trace and proves it sound.
 
 ## The Gödel Machine
 
@@ -55,9 +55,10 @@ threshold 2:  [{abduced=[earthquake]}]
 
 You need [elan](https://github.com/leanprover/elan). It reads `lean-toolchain` in each folder and fetches the right Lean version on its own.
 
-The Gödel Machine, Lean 4.10.0, from the top of the repo:
+The Gödel Machine, Lean 4.10.0:
 
 ```
+cd godel-machine
 lake build
 ```
 
@@ -73,9 +74,10 @@ The logos-lab build prints the two example results above, along with the axioms 
 ## Repo map
 
 ```
-GodelMachine.lean     the self-rewriting kernel (Lean 4.10.0)
-lakefile.lean         build file for the kernel
-lean-toolchain        pins Lean 4.10.0
+godel-machine/       the self-rewriting kernel (Lean 4.10.0)
+  GodelMachine.lean   the kernel and its proofs
+  lakefile.lean       build file
+  lean-toolchain      pins Lean 4.10.0
 logos-lab/            the logic engine project (Lean 4.12.0)
   LogosLab/           Syntax, Unify, State, Measures, Guards, Finite,
                       Examples, Deriv, Replay

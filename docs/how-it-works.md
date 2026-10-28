@@ -2,7 +2,7 @@
 
 A longer walk through the two projects in this repo. The figures are in `docs/img/`.
 
-## Part 1: the Gödel Machine (`GodelMachine.lean`)
+## Part 1: the Gödel Machine (`godel-machine/GodelMachine.lean`)
 
 The file is built in six layers, each one resting on the one before.
 
