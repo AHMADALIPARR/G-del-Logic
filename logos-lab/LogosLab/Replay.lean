@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-SnapKitty-Opaque-1.0
+-- Copyright Ahmad Ali Parr
 /-
   LogosLab.Replay — syntactic soundness: every answer returned by
   `solve` has a `Deriv` tree (theorem 1, `replay_sound`), and every

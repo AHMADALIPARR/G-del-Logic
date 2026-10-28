@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-SnapKitty-Opaque-1.0
+-- Copyright Ahmad Ali Parr
 /-
   LogosLab.Measures — termination measures. See MEASURES.md §4.
   No solver code is defined here: `solve` and `alp_loop` are

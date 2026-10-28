@@ -1,0 +1,28 @@
+digraph G {
+  rankdir=TB; nodesep=0.3; ranksep=0.5; newrank=true;
+  graph [fontname="DejaVu Sans", bgcolor="white", pad=0.35, dpi=200]
+  node [fontname="DejaVu Sans", fontsize=13, shape=box, style="rounded,filled", fillcolor="#eef3fb", color="#3b5b8c", penwidth=1.4, margin="0.2,0.12"]
+  edge [fontname="DejaVu Sans", fontsize=11, color="#3b5b8c", penwidth=1.4, arrowsize=0.9]
+  node [fontsize=12]
+  subgraph cluster_t3 { label=<<b>Threshold 3</b>  –  both explanations fit>; fontname="DejaVu Sans"; fontsize=14; color="#2e7d4f"; style="rounded"; penwidth=1.6;
+    a3 [label=<goal: <b>alarm</b>>];
+    b3 [label=<needs <b>burglary</b>>];
+    e3 [label=<needs <b>earthquake</b>>];
+    ab3 [label=<assume burglary<br/>weight 3 ≤ 3  ✔>, fillcolor="#d4edda", color="#2e7d4f"];
+    ae3 [label=<assume earthquake<br/>weight 2 ≤ 3  ✔>, fillcolor="#d4edda", color="#2e7d4f"];
+    r3a [label=<<b>{burglary}</b>>, shape=ellipse, fillcolor="#2e7d4f", fontcolor=white, color="#2e7d4f"];
+    r3b [label=<<b>{earthquake}</b>>, shape=ellipse, fillcolor="#2e7d4f", fontcolor=white, color="#2e7d4f"];
+    a3 -> b3 [label=" alarm :- burglary"]; a3 -> e3 [label=" alarm :- earthquake"];
+    b3 -> ab3 -> r3a; e3 -> ae3 -> r3b;
+  }
+  subgraph cluster_t2 { label=<<b>Threshold 2</b>  –  the guard cuts the burglary branch>; fontname="DejaVu Sans"; fontsize=14; color="#b3392f"; style="rounded"; penwidth=1.6;
+    a2 [label=<goal: <b>alarm</b>>];
+    b2 [label=<needs <b>burglary</b>>];
+    e2 [label=<needs <b>earthquake</b>>];
+    ab2 [label=<assume burglary<br/>weight 3 &gt; 2  ✘<br/><b>pruned</b>>, fillcolor="#fbe3e1", color="#b3392f", style="rounded,filled,dashed"];
+    ae2 [label=<assume earthquake<br/>weight 2 ≤ 2  ✔>, fillcolor="#d4edda", color="#2e7d4f"];
+    r2b [label=<<b>{earthquake}</b>>, shape=ellipse, fillcolor="#2e7d4f", fontcolor=white, color="#2e7d4f"];
+    a2 -> b2 [label=" alarm :- burglary"]; a2 -> e2 [label=" alarm :- earthquake"];
+    b2 -> ab2 [color="#b3392f", style=dashed]; e2 -> ae2 -> r2b;
+  }
+}

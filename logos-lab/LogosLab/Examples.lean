@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-SnapKitty-Opaque-1.0
+-- Copyright Ahmad Ali Parr
 /-
   LogosLab.Examples — program DATA for the solver phase.
   This file contains no solver, no answers, and no pipeline run.

@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-SnapKitty-Opaque-1.0
+-- Copyright Ahmad Ali Parr
 /-
   GÖDEL MACHINE KERNEL  (GodelMachine.lean)
   =========================================
@@ -45,15 +47,23 @@ theorem pow2_pos (n : Nat) : 0 < pow2 n := by
 def v2 : Nat → Nat
   | 0     => 0
   | n + 1 => if (n + 1) % 2 = 0 then v2 ((n + 1) / 2) + 1 else 0
-termination_by v2 n => n
-decreasing_by omega
+termination_by n => n
+decreasing_by simp_wf; omega
 
 /-- Odd part: n with all factors of 2 removed (0 at n = 0). -/
 def oddPart : Nat → Nat
   | 0     => 0
   | n + 1 => if (n + 1) % 2 = 0 then oddPart ((n + 1) / 2) else n + 1
-termination_by oddPart n => n
-decreasing_by omega
+termination_by n => n
+decreasing_by simp_wf; omega
+
+theorem v2_succ (k : Nat) :
+    v2 (k + 1) = if (k + 1) % 2 = 0 then v2 ((k + 1) / 2) + 1 else 0 := by
+  rw [v2]
+
+theorem oddPart_succ (k : Nat) :
+    oddPart (k + 1) = if (k + 1) % 2 = 0 then oddPart ((k + 1) / 2) else k + 1 := by
+  rw [oddPart]
 
 theorem v2_two_mul {m : Nat} : 0 < m → v2 (2 * m) = v2 m + 1 := by
   intro h
@@ -62,8 +72,8 @@ theorem v2_two_mul {m : Nat} : 0 < m → v2 (2 * m) = v2 m + 1 := by
   | succ k =>
       have he : (2 * (k + 1)) % 2 = 0 := by omega
       have hd : (2 * (k + 1)) / 2 = k + 1 := by omega
-      show (if (2 * (k + 1)) % 2 = 0 then v2 ((2 * (k + 1)) / 2) + 1 else 0) = v2 (k + 1) + 1
-      rw [if_pos he, hd]
+      have e : 2 * (k + 1) = (2 * k + 1) + 1 := by omega
+      rw [e, v2_succ, ← e, if_pos he, hd]
 
 theorem oddPart_two_mul {m : Nat} : 0 < m → oddPart (2 * m) = oddPart m := by
   intro h
@@ -72,8 +82,8 @@ theorem oddPart_two_mul {m : Nat} : 0 < m → oddPart (2 * m) = oddPart m := by
   | succ k =>
       have he : (2 * (k + 1)) % 2 = 0 := by omega
       have hd : (2 * (k + 1)) / 2 = k + 1 := by omega
-      show (if (2 * (k + 1)) % 2 = 0 then oddPart ((2 * (k + 1)) / 2) else 2 * (k + 1)) = oddPart (k + 1)
-      rw [if_pos he, hd]
+      have e : 2 * (k + 1) = (2 * k + 1) + 1 := by omega
+      rw [e, oddPart_succ, ← e, if_pos he, hd]
 
 /-- Prime-factorized pairing: the tag lives in the exponent of prime 2. -/
 def pair (a b : Nat) : Nat := pow2 a * (2 * b + 1)
@@ -84,105 +94,110 @@ theorem v2_pair (a b : Nat) : v2 (pair a b) = a := by
   induction a with
   | zero =>
       show v2 (pow2 0 * (2 * b + 1)) = 0
-      show v2 (1 * (2 * b + 1)) = 0
-      show v2 (2 * b + 1) = 0
-      have ho : (2 * b + 1) % 2 = 1 := by omega
-      show (if (2 * b + 1) % 2 = 0 then v2 ((2 * b + 1) / 2) + 1 else 0) = 0
-      rw [if_neg (by omega)]
+      have e : pow2 0 * (2 * b + 1) = (2 * b) + 1 := by simp [pow2]
+      rw [e, v2_succ, if_neg (by omega)]
   | succ k ih =>
+      have e : pow2 (k + 1) * (2 * b + 1) = 2 * (pow2 k * (2 * b + 1)) := by
+        simp only [pow2]; rw [Nat.mul_assoc]
+      have hpos : 0 < pow2 k * (2 * b + 1) :=
+        Nat.mul_pos (pow2_pos k) (by omega)
       show v2 (pow2 (k + 1) * (2 * b + 1)) = k + 1
-      show v2 (2 * (pow2 k * (2 * b + 1))) = k + 1
-      have hpos : 0 < pow2 k * (2 * b + 1) := by
-        have := pow2_pos k; omega
-      rw [v2_two_mul hpos, ih]
+      rw [e, v2_two_mul hpos]
+      exact congrArg (· + 1) ih
 
 theorem odd_part_pair (a b : Nat) : oddPart (pair a b) = 2 * b + 1 := by
   induction a with
   | zero =>
       show oddPart (pow2 0 * (2 * b + 1)) = 2 * b + 1
-      show oddPart (1 * (2 * b + 1)) = 2 * b + 1
-      show oddPart (2 * b + 1) = 2 * b + 1
-      have ho : (2 * b + 1) % 2 = 1 := by omega
-      show (if (2 * b + 1) % 2 = 0 then oddPart ((2 * b + 1) / 2) else 2 * b + 1) = 2 * b + 1
-      rw [if_neg (by omega)]
+      have e : pow2 0 * (2 * b + 1) = (2 * b) + 1 := by simp [pow2]
+      rw [e, oddPart_succ, if_neg (by omega)]
   | succ k ih =>
+      have e : pow2 (k + 1) * (2 * b + 1) = 2 * (pow2 k * (2 * b + 1)) := by
+        simp only [pow2]; rw [Nat.mul_assoc]
+      have hpos : 0 < pow2 k * (2 * b + 1) :=
+        Nat.mul_pos (pow2_pos k) (by omega)
       show oddPart (pow2 (k + 1) * (2 * b + 1)) = 2 * b + 1
-      show oddPart (2 * (pow2 k * (2 * b + 1))) = 2 * b + 1
-      have hpos : 0 < pow2 k * (2 * b + 1) := by
-        have := pow2_pos k; omega
-      rw [oddPart_two_mul hpos, ih]
+      rw [e, oddPart_two_mul hpos]
+      exact ih
 
 theorem unpair_pair (a b : Nat) : unpair (pair a b) = (a, b) := by
   show (v2 (pair a b), (oddPart (pair a b) - 1) / 2) = (a, b)
   rw [v2_pair, odd_part_pair]
   refine Prod.ext rfl ?_
+  show (2 * b + 1 - 1) / 2 = b
   omega
 
 theorem v2_le : ∀ n, v2 n ≤ n := by
   intro n
-  refine Nat.strongRecOn n ?_
-  intro m ih
+  induction n using Nat.strongInductionOn
+  rename_i m ih
   cases m with
-  | zero => exact rfl
+  | zero => rw [v2]; exact Nat.le_refl _
   | succ k =>
       by_cases he : (k + 1) % 2 = 0
       · have e : k + 1 = 2 * ((k + 1) / 2) := by omega
         have hv : v2 (k + 1) = v2 ((k + 1) / 2) + 1 := by
-          rw [e]; exact v2_two_mul (by omega)
+          have h := v2_two_mul (m := (k + 1) / 2) (by omega)
+          rw [← e] at h
+          exact h
         rw [hv]
         have := ih ((k + 1) / 2) (by omega)
         omega
-      · show (if (k + 1) % 2 = 0 then v2 ((k + 1) / 2) + 1 else 0) ≤ k + 1
-        rw [if_neg he]; omega
+      · rw [v2_succ, if_neg he]; omega
 
 theorem oddPart_le : ∀ n, oddPart n ≤ n := by
   intro n
-  refine Nat.strongRecOn n ?_
-  intro m ih
+  induction n using Nat.strongInductionOn
+  rename_i m ih
   cases m with
-  | zero => exact rfl
+  | zero => rw [oddPart]; exact Nat.le_refl _
   | succ k =>
       by_cases he : (k + 1) % 2 = 0
       · have e : k + 1 = 2 * ((k + 1) / 2) := by omega
         have ho : oddPart (k + 1) = oddPart ((k + 1) / 2) := by
-          rw [e]; exact oddPart_two_mul (by omega)
+          have h := oddPart_two_mul (m := (k + 1) / 2) (by omega)
+          rw [← e] at h
+          exact h
         rw [ho]
         have := ih ((k + 1) / 2) (by omega)
         omega
-      · show (if (k + 1) % 2 = 0 then oddPart ((k + 1) / 2) else k + 1) ≤ k + 1
-        rw [if_neg he]
+      · rw [oddPart_succ, if_neg he]; exact Nat.le_refl _
 
 theorem oddPart_pos : ∀ {n : Nat}, n ≠ 0 → 0 < oddPart n := by
   intro n
-  refine Nat.strongRecOn n ?_
-  intro m ih hm
+  induction n using Nat.strongInductionOn
+  rename_i m ih
+  intro hm
   cases m with
   | zero => contradiction
   | succ k =>
       by_cases he : (k + 1) % 2 = 0
       · have e : k + 1 = 2 * ((k + 1) / 2) := by omega
         have ho : oddPart (k + 1) = oddPart ((k + 1) / 2) := by
-          rw [e]; exact oddPart_two_mul (by omega)
+          have h := oddPart_two_mul (m := (k + 1) / 2) (by omega)
+          rw [← e] at h
+          exact h
         rw [ho]
-        exact ih (by omega) (by omega)
-      · show (if (k + 1) % 2 = 0 then oddPart ((k + 1) / 2) else k + 1) > 0
-        rw [if_neg he]; omega
+        exact ih ((k + 1) / 2) (by omega) (by omega)
+      · rw [oddPart_succ, if_neg he]; omega
 
 theorem oddPart_odd : ∀ {n : Nat}, n ≠ 0 → oddPart n % 2 = 1 := by
   intro n
-  refine Nat.strongRecOn n ?_
-  intro m ih hm
+  induction n using Nat.strongInductionOn
+  rename_i m ih
+  intro hm
   cases m with
   | zero => contradiction
   | succ k =>
       by_cases he : (k + 1) % 2 = 0
       · have e : k + 1 = 2 * ((k + 1) / 2) := by omega
         have ho : oddPart (k + 1) = oddPart ((k + 1) / 2) := by
-          rw [e]; exact oddPart_two_mul (by omega)
+          have h := oddPart_two_mul (m := (k + 1) / 2) (by omega)
+          rw [← e] at h
+          exact h
         rw [ho]
-        exact ih (by omega) (by omega)
-      · show (if (k + 1) % 2 = 0 then oddPart ((k + 1) / 2) else k + 1) % 2 = 1
-        rw [if_neg he]; omega
+        exact ih ((k + 1) / 2) (by omega) (by omega)
+      · rw [oddPart_succ, if_neg he]; omega
 
 /-- Unfolded strict snd-bound (used by decreasing_by blocks). -/
 theorem unpair_snd_lt' : ∀ {n : Nat}, n ≠ 0 → (oddPart n - 1) / 2 < n := by
@@ -197,35 +212,48 @@ theorem unpair_snd_lt' : ∀ {n : Nat}, n ≠ 0 → (oddPart n - 1) / 2 < n := b
 /-- Fundamental theorem of the coding: n = 2^(v2 n) * oddPart n. -/
 theorem pow2_v2_mul_oddPart : ∀ n, n ≠ 0 → pow2 (v2 n) * oddPart n = n := by
   intro n
-  refine Nat.strongRecOn n ?_
-  intro m ih hm
+  induction n using Nat.strongInductionOn
+  rename_i m ih
+  intro hm
   cases m with
   | zero => contradiction
   | succ k =>
       by_cases he : (k + 1) % 2 = 0
       · have e : k + 1 = 2 * ((k + 1) / 2) := by omega
         have hv : v2 (k + 1) = v2 ((k + 1) / 2) + 1 := by
-          rw [e]; exact v2_two_mul (by omega)
+          have h := v2_two_mul (m := (k + 1) / 2) (by omega)
+          rw [← e] at h
+          exact h
         have ho : oddPart (k + 1) = oddPart ((k + 1) / 2) := by
-          rw [e]; exact oddPart_two_mul (by omega)
-        rw [hv, ho, ← e, mul_assoc]
-        exact ih ((k + 1) / 2) (by omega) (by omega)
+          have h := oddPart_two_mul (m := (k + 1) / 2) (by omega)
+          rw [← e] at h
+          exact h
+        have ih' := ih ((k + 1) / 2) (by omega) (by omega)
+        rw [hv, ho]
+        show 2 * pow2 (v2 ((k + 1) / 2)) * oddPart ((k + 1) / 2) = k + 1
+        rw [Nat.mul_assoc, ih']
+        omega
       · have hv : v2 (k + 1) = 0 := by
-          show (if (k + 1) % 2 = 0 then v2 ((k + 1) / 2) + 1 else 0) = 0
-          rw [if_neg he]
+          rw [v2_succ, if_neg he]
         have ho : oddPart (k + 1) = k + 1 := by
-          show (if (k + 1) % 2 = 0 then oddPart ((k + 1) / 2) else k + 1) = k + 1
-          rw [if_neg he]
+          rw [oddPart_succ, if_neg he]
         rw [hv, ho]
         show 1 * (k + 1) = k + 1
-        rw [one_mul]
+        rw [Nat.one_mul]
 
 theorem pair_unpair {n : Nat} (h : n ≠ 0) : pair (unpair n).1 (unpair n).2 = n := by
   show pow2 (v2 n) * (2 * ((oddPart n - 1) / 2) + 1) = n
   have ho := oddPart_odd h
-  have hp := oddPart_pos h
+  have _hp := oddPart_pos h
   have e : 2 * ((oddPart n - 1) / 2) + 1 = oddPart n := by omega
-  rw [e, pow2_v2_mul_oddPart h]
+  rw [e]
+  exact pow2_v2_mul_oddPart n h
+
+theorem pair_pos (a b : Nat) : pair a b ≠ 0 := by
+  have := Nat.mul_pos (pow2_pos a) (by omega : 0 < 2 * b + 1)
+  show pow2 a * (2 * b + 1) ≠ 0
+  omega
+
 
 /- ====================== Layer 1: Gödel-coded syntax ====================== -/
 
@@ -242,38 +270,75 @@ def codeTerm : Term → Nat
 
 def decodeTerm : Nat → Option Term
   | 0 => none
-  | n => match unpair n with
+  | n => match _h : unpair n with
     | (0, b) => some (Term.var b)
     | (1, b) => some (Term.con b)
-    | (2, b) => match unpair b with
-      | (f, lr) => match unpair lr with
+    | (2, b) => match _h2 : unpair b with
+      | (f, lr) => match _h3 : unpair lr with
         | (cl, cr) => match decodeTerm cl, decodeTerm cr with
           | some l, some r => some (Term.app f l r)
           | _, _           => none
     | _ => none
-termination_by decodeTerm n => n
+termination_by n => n
 decreasing_by
+  all_goals simp_wf
   all_goals
-    have h1 := unpair_snd_lt' (by omega : n + 1 ≠ 0)
-    have h2 := v2_le ((oddPart (n + 1) - 1) / 2)
-    have h3 := oddPart_le ((oddPart (n + 1) - 1) / 2)
+    have h' : (v2 n, (oddPart n - 1) / 2) = (2, b) := _h
+    have h2' : (v2 b, (oddPart b - 1) / 2) = (f, lr) := _h2
+    have h3' : (v2 lr, (oddPart lr - 1) / 2) = (cl, cr) := _h3
+    injection h' with a1 a2
+    injection h3' with c1 c2
+    injection h2' with b1 b2
+    have hv0 : v2 0 = 0 := by rw [v2]
+    have hn : n ≠ 0 := by
+      intro e; subst e; omega
+    have l1 := unpair_snd_lt' hn
+    have l2 := oddPart_le b
+    have l3 := v2_le lr
+    have l4 := oddPart_le lr
     omega
 
 theorem decodeTerm_codeTerm (t : Term) : decodeTerm (codeTerm t) = some t := by
   induction t with
   | var n =>
-      show (match unpair (pair 0 n) with | (0, b) => some (Term.var b) | _ => none) = some (Term.var n)
-      rw [unpair_pair]
+      rw [codeTerm, decodeTerm.eq_2 _ (pair_pos 0 n)]
+      split
+      · rename_i b hb
+        rw [unpair_pair] at hb
+        injection hb with _ h2; rw [h2]
+      · rename_i b hb; rw [unpair_pair] at hb; simp at hb
+      · rename_i b hb; rw [unpair_pair] at hb; simp at hb
+      · rename_i h0 _ _; exact (h0 n (unpair_pair 0 n)).elim
   | con c =>
-      show (match unpair (pair 1 c) with | (1, b) => some (Term.con b) | _ => none) = some (Term.con c)
-      rw [unpair_pair]
+      rw [codeTerm, decodeTerm.eq_2 _ (pair_pos 1 c)]
+      split
+      · rename_i b hb; rw [unpair_pair] at hb; simp at hb
+      · rename_i b hb
+        rw [unpair_pair] at hb
+        injection hb with _ h2; rw [h2]
+      · rename_i b hb; rw [unpair_pair] at hb; simp at hb
+      · rename_i _ h1 _; exact (h1 c (unpair_pair 1 c)).elim
   | app f l r ihl ihr =>
-      show (match unpair (pair 2 (pair f (pair (codeTerm l) (codeTerm r)))) with
-            | (2, b) => match unpair b with | (f, lr) => match unpair lr with
-                | (cl, cr) => match decodeTerm cl, decodeTerm cr with
-                    | some l, some r => some (Term.app f l r) | _, _ => none
-              | _ => none | _ => none) = some (Term.app f l r)
-      rw [unpair_pair, unpair_pair, unpair_pair, ihl, ihr]
+      rw [codeTerm, decodeTerm.eq_2 _ (pair_pos 2 _)]
+      split
+      · rename_i b hb; rw [unpair_pair] at hb; simp at hb
+      · rename_i b hb; rw [unpair_pair] at hb; simp at hb
+      · rename_i b hb
+        rw [unpair_pair] at hb
+        injection hb with _ h2
+        subst h2
+        split
+        · rename_i f' lr h2
+          rw [unpair_pair] at h2
+          injection h2 with e1 e2
+          subst e1; subst e2
+          split
+          · rename_i cl cr h3
+            rw [unpair_pair] at h3
+            injection h3 with e1 e2
+            subst e1; subst e2
+            rw [ihl, ihr]
+      · rename_i _ _ h2; exact (h2 _ (unpair_pair 2 _)).elim
 
 /-- Sequence numbers: Gödel-coded lists of naturals (0 codes []). -/
 def codeList : List Nat → Nat
@@ -282,13 +347,16 @@ def codeList : List Nat → Nat
 
 def decodeList : Nat → Option (List Nat)
   | 0 => some []
-  | n => match unpair n with
+  | n + 1 => match _h : unpair (n + 1) with
     | (x, r) => match decodeList r with
       | some l => some ((x - 1) :: l)
       | none   => none
-termination_by decodeList n => n
+termination_by n => n
 decreasing_by
+  all_goals simp_wf
   all_goals
+    have h' : (v2 (n + 1), (oddPart (n + 1) - 1) / 2) = (x, r) := _h
+    injection h' with a1 a2
     have h1 := unpair_snd_lt' (by omega : n + 1 ≠ 0)
     omega
 
@@ -296,14 +364,21 @@ theorem decodeList_codeList (l : List Nat) : decodeList (codeList l) = some l :=
   induction l with
   | nil    => rfl
   | cons x xs ih =>
-      show (match unpair (pair (x + 1) (codeList xs)) with
-            | (x', r) => match decodeList r with
-              | some l => some ((x' - 1) :: l) | none => none) = some (x :: xs)
-      rw [unpair_pair, ih]
+      obtain ⟨m, hm⟩ : ∃ m, pair (x + 1) (codeList xs) = m + 1 :=
+        ⟨pair (x + 1) (codeList xs) - 1, by have := pair_pos (x + 1) (codeList xs); omega⟩
+      have hu := unpair_pair (x + 1) (codeList xs)
+      rw [hm] at hu
+      rw [codeList, hm, decodeList]
+      split
+      · rename_i x' r hb
+        rw [hu] at hb
+        injection hb with e1 e2
+        subst e1; subst e2
+        simp only [ih, Nat.add_sub_cancel]
 
 inductive Goal where
   | atom (p : Nat) (args : List Nat)
-  deriving DecidableEq, Repr, BEq
+  deriving DecidableEq, Repr
 
 def codeGoal : Goal → Nat
   | Goal.atom p args => pair p (codeList args)
@@ -314,30 +389,35 @@ def decodeGoal : Nat → Option Goal
     | (p, al) => match decodeList al with
       | some args => some (Goal.atom p args)
       | none      => none
-termination_by decodeGoal n => n
-decreasing_by
-  all_goals
-    have h1 := unpair_snd_lt' (by omega : n + 1 ≠ 0)
-    omega
 
 theorem decodeGoal_codeGoal (g : Goal) : decodeGoal (codeGoal g) = some g := by
   cases g with
   | atom p args =>
-      show (match unpair (pair p (codeList args)) with
-            | (p, al) => match decodeList al with
-              | some args => some (Goal.atom p args) | none => none) = some (Goal.atom p args)
-      rw [unpair_pair, decodeList_codeList]
+      rw [codeGoal]
+      unfold decodeGoal
+      split
+      · rename_i h0; exact absurd h0 (pair_pos _ _)
+      · rw [unpair_pair]
+        dsimp only
+        rw [decodeList_codeList]
 
 structure Rule where
   head : Goal
   body : List Goal
-  deriving DecidableEq, Repr, BEq
+  deriving DecidableEq, Repr
 
 def decodeGoals : List Nat → Option (List Goal)
   | []      => some []
   | n :: ns => match decodeGoal n, decodeGoals ns with
     | some g, some gs => some (g :: gs)
     | _, _            => none
+
+theorem decodeGoals_codeGoals (body : List Goal) :
+    decodeGoals (body.map codeGoal) = some body := by
+  induction body with
+  | nil => rfl
+  | cons b bs ih =>
+      rw [List.map, decodeGoals, decodeGoal_codeGoal, ih]
 
 def codeRule (r : Rule) : Nat :=
   pair (codeGoal r.head + 1) (codeList (r.body.map codeGoal))
@@ -351,43 +431,35 @@ def decodeRule : Nat → Option Rule
               | some body => some { head := hd, body := body }
               | none => none
           | _, _ => none
-termination_by decodeRule n => n
-decreasing_by
-  all_goals
-    have h1 := unpair_snd_lt' (by omega : n + 1 ≠ 0)
-    have h2 := v2_le (n + 1)
-    omega
 
 theorem decodeRule_codeRule (r : Rule) : decodeRule (codeRule r) = some r := by
   cases r with
   | mk head body =>
-      show (match unpair (pair (codeGoal head + 1) (codeList (body.map codeGoal))) with
-            | (h, bl) => if h = 0 then none
-                else match decodeGoal (h - 1), decodeList bl with
-                  | some hd, some bs => match decodeGoals bs with
-                      | some body => some { head := hd, body := body } | none => none
-                  | _, _ => none) = some { head := head, body := body }
-      rw [unpair_pair, if_neg (by omega)]
-      have e : codeGoal head + 1 - 1 = codeGoal head := by omega
-      rw [e, decodeGoal_codeGoal, decodeList_codeList]
-      induction body with
-      | nil => rfl
-      | cons b bs ih =>
-          show (match decodeGoal (codeGoal b), decodeGoals (List.map codeGoal bs) with
-                | some g, some gs => some (g :: gs) | _, _ => none) = some (b :: bs)
-          rw [decodeGoal_codeGoal, ih]
+      rw [codeRule]
+      unfold decodeRule
+      split
+      · rename_i h0; exact absurd h0 (pair_pos _ _)
+      · rw [unpair_pair]
+        dsimp only
+        rw [if_neg (by omega)]
+        have e : codeGoal head + 1 - 1 = codeGoal head := by omega
+        rw [e, decodeGoal_codeGoal, decodeList_codeList]
+        simp only [decodeGoals_codeGoals]
 
 def codeProg : List Rule → Nat := codeList ∘ List.map codeRule
 
 def decodeProg : Nat → Option (List Rule)
   | 0 => some []
-  | n => match unpair n with
-    | (x, r) => match decodeProg r, decodeRule x with
+  | n + 1 => match _h : unpair (n + 1) with
+    | (x, r) => match decodeProg r, decodeRule (x - 1) with
       | some rs, some rr => some (rr :: rs)
       | _, _ => none
-termination_by decodeProg n => n
+termination_by n => n
 decreasing_by
+  all_goals simp_wf
   all_goals
+    have h' : (v2 (n + 1), (oddPart (n + 1) - 1) / 2) = (x, r) := _h
+    injection h' with a1 a2
     have h1 := unpair_snd_lt' (by omega : n + 1 ≠ 0)
     omega
 
@@ -395,10 +467,20 @@ theorem decodeProg_codeProg (P : List Rule) : decodeProg (codeProg P) = some P :
   induction P with
   | nil    => rfl
   | cons r rs ih =>
-      show (match unpair (pair (codeRule r + 1) (codeProg rs)) with
-            | (x, r') => match decodeProg r', decodeRule x with
-              | some rs, some rr => some (rr :: rs) | _, _ => none) = some (r :: rs)
-      rw [unpair_pair, ih, decodeRule_codeRule]
+      obtain ⟨m, hm⟩ : ∃ m, pair (codeRule r + 1) (codeProg rs) = m + 1 :=
+        ⟨pair (codeRule r + 1) (codeProg rs) - 1,
+         by have := pair_pos (codeRule r + 1) (codeProg rs); omega⟩
+      have hu := unpair_pair (codeRule r + 1) (codeProg rs)
+      rw [hm] at hu
+      have hc : codeProg (r :: rs) = m + 1 := by
+        rw [← hm]; rfl
+      rw [hc, decodeProg]
+      split
+      · rename_i x' r' hb
+        rw [hu] at hb
+        injection hb with e1 e2
+        subst e1; subst e2
+        simp only [ih, Nat.add_sub_cancel, decodeRule_codeRule]
 
 /- ============================ Layer 2: execution =========================== -/
 
@@ -412,15 +494,26 @@ def remove' {α : Type} [DecidableEq α] (x : α) : List α → List α
   | []     => []
   | y :: t => if y = x then remove' x t else y :: remove' x t
 
+theorem remove'_cons_pos {α : Type} [DecidableEq α] {x a : α} (t : List α)
+    (h : a = x) : remove' x (a :: t) = remove' x t := by
+  rw [remove', if_pos h]
+
+theorem remove'_cons_neg {α : Type} [DecidableEq α] {x a : α} (t : List α)
+    (h : a ≠ x) : remove' x (a :: t) = a :: remove' x t := by
+  rw [remove', if_neg h]
+
 theorem notin_remove' {α : Type} [DecidableEq α] {x : α} (l : List α) :
     x ∉ remove' x l := by
   induction l with
   | nil => simp [remove']
   | cons a t ih =>
       by_cases ha : a = x
-      · rw [if_pos ha]; exact ih
-      · rw [if_neg ha, List.mem_cons]
-        exact ⟨ha, ih⟩
+      · rw [remove', if_pos ha]; exact ih
+      · rw [remove', if_neg ha]
+        intro h
+        rcases List.mem_cons.1 h with h | h
+        · exact ha h.symm
+        · exact ih h
 
 theorem remove'_sub {α : Type} [DecidableEq α] {x y : α} (l : List α) :
     y ∈ remove' x l → y ∈ l := by
@@ -428,11 +521,12 @@ theorem remove'_sub {α : Type} [DecidableEq α] {x y : α} (l : List α) :
   | nil => intro h; simp [remove'] at h
   | cons a t ih =>
       by_cases ha : a = x
-      · rw [if_pos ha]; intro h; right; exact ih h
-      · rw [if_neg ha, List.mem_cons]
-        rintro (rfl | h)
-        · left; rfl
-        · right; exact ih h
+      · rw [remove', if_pos ha]; intro h; exact List.Mem.tail a (ih h)
+      · rw [remove', if_neg ha]
+        intro h
+        rcases List.mem_cons.1 h with h | h
+        · rw [h]; exact List.Mem.head t
+        · exact List.Mem.tail a (ih h)
 
 theorem remove'_notin {α : Type} [DecidableEq α] {x : α} {l : List α}
     (h : x ∉ l) : remove' x l = l := by
@@ -440,23 +534,8 @@ theorem remove'_notin {α : Type} [DecidableEq α] {x : α} {l : List α}
   | nil => rfl
   | cons a t ih =>
       by_cases ha : a = x
-      · rw [if_pos ha]; simp at h
-      · rw [if_neg ha, ih (fun hx => h (List.Mem.tail a hx))]
-
-theorem length_remove' {α : Type} [DecidableEq α] {x : α} {l : List α}
-    (h : x ∈ l) : (remove' x l).length = l.length - 1 := by
-  induction l with
-  | nil => simp at h
-  | cons a t ih =>
-      by_cases ha : a = x
-      · rw [if_pos ha]
-        by_cases hx : x ∈ t
-        · rw [ih hx]; omega
-        · rw [remove'_notin hx]; omega
-      · rw [if_neg ha]
-        rcases h with h | h
-        · simp_all
-        · rw [ih h]; omega
+      · exact (h (by rw [← ha]; exact List.Mem.head t)).elim
+      · rw [remove', if_neg ha, ih (fun hx => h (List.Mem.tail a hx))]
 
 theorem length_remove'_le {α : Type} [DecidableEq α] (x : α) (l : List α) :
     (remove' x l).length ≤ l.length := by
@@ -464,8 +543,25 @@ theorem length_remove'_le {α : Type} [DecidableEq α] (x : α) (l : List α) :
   | nil => simp [remove']
   | cons a t ih =>
       by_cases ha : a = x
-      · rw [if_pos ha]; omega
-      · rw [if_neg ha]; omega
+      · rw [remove', if_pos ha, List.length_cons]; omega
+      · rw [remove', if_neg ha, List.length_cons, List.length_cons]; omega
+
+theorem length_remove' {α : Type} [DecidableEq α] {x : α} {l : List α}
+    (h : x ∈ l) : (remove' x l).length ≤ l.length - 1 := by
+  induction l with
+  | nil => simp at h
+  | cons a t ih =>
+      by_cases ha : a = x
+      · rw [remove'_cons_pos t ha, List.length_cons]
+        have := length_remove'_le x t
+        omega
+      · rw [remove'_cons_neg t ha]
+        cases h with
+        | head => exact absurd rfl ha
+        | tail _ h =>
+            have hp := List.length_pos_of_mem h
+            have := ih h
+            rw [List.length_cons, List.length_cons]; omega
 
 theorem mem_remove' {α : Type} [DecidableEq α] {x y : α} {l : List α}
     (hn : y ≠ x) : y ∈ remove' x l ↔ y ∈ l := by
@@ -473,20 +569,14 @@ theorem mem_remove' {α : Type} [DecidableEq α] {x y : α} {l : List α}
   | nil => simp [remove']
   | cons a t ih =>
       by_cases ha : a = x
-      · rw [if_pos ha]
+      · rw [remove'_cons_pos t ha]
         constructor
-        · intro h; right; exact ih.1 h
-        · rintro (rfl | h)
-          · simp_all
+        · intro h; exact List.Mem.tail a (ih.1 h)
+        · intro h
+          rcases List.mem_cons.1 h with h | h
+          · exact absurd (h.trans ha) hn
           · exact ih.2 h
-      · rw [if_neg ha, List.mem_cons]
-        constructor
-        · rintro (rfl | h)
-          · left; rfl
-          · right; exact ih.1 h
-        · rintro (rfl | h)
-          · left; rfl
-          · right; exact ih.2 h
+      · rw [remove'_cons_neg t ha, List.mem_cons, List.mem_cons, ih]
 
 theorem remove'_idem {α : Type} [DecidableEq α] (x : α) (l : List α) :
     remove' x (remove' x l) = remove' x l := by
@@ -494,9 +584,8 @@ theorem remove'_idem {α : Type} [DecidableEq α] (x : α) (l : List α) :
   | nil => rfl
   | cons a t ih =>
       by_cases ha : a = x
-      · rw [if_pos ha]; exact ih
-      · show (if a = x then _ else a :: remove' x (remove' x t)) = a :: remove' x t
-        rw [if_neg ha, ih]
+      · rw [remove'_cons_pos t ha]; exact ih
+      · rw [remove'_cons_neg t ha, remove'_cons_neg _ ha, ih]
 
 theorem remove'_comm {α : Type} [DecidableEq α] {x y : α} (h : x ≠ y)
     (l : List α) : remove' x (remove' y l) = remove' y (remove' x l) := by
@@ -504,16 +593,11 @@ theorem remove'_comm {α : Type} [DecidableEq α] {x y : α} (h : x ≠ y)
   | nil => rfl
   | cons a t ih =>
       by_cases hay : a = y <;> by_cases hax : a = x
-      · simp_all
-      · subst hay
-        show remove' x (remove' y (y :: t)) = remove' y (remove' x (y :: t))
-        rw [if_pos rfl, if_neg hax, if_neg (Ne.symm h), ih]
-      · subst hax
-        show remove' x (remove' y (x :: t)) = remove' y (remove' x (x :: t))
-        rw [if_pos rfl, if_neg h, if_neg (fun e => h e.symm), ih]
-      · show (if a = y then _ else a :: remove' x (remove' y t)) =
-             (if a = x then _ else a :: remove' y (remove' x t))
-        rw [if_neg hay, if_neg hax, ih]
+      · exact absurd (hax.symm.trans hay) h
+      · rw [remove'_cons_pos t hay, remove'_cons_neg t hax, remove'_cons_pos _ hay, ih]
+      · rw [remove'_cons_neg t hay, remove'_cons_pos _ hax, remove'_cons_pos t hax, ih]
+      · rw [remove'_cons_neg t hay, remove'_cons_neg _ hax, remove'_cons_neg t hax,
+            remove'_cons_neg _ hay, ih]
 
 /-- Duplicate-free list, FIRST occurrence kept.  Structural recursion.
     First-occurrence dedup is what makes every closure step a strict
@@ -531,23 +615,25 @@ theorem remove'_dfl {α : Type} [DecidableEq α] (x : α) (l : List α) :
       by_cases hyx : y = x
       · subst hyx
         show remove' y (y :: remove' y (nodup' t)) = nodup' (remove' y (y :: t))
-        rw [if_pos rfl, if_pos rfl, remove'_idem, ih]
+        rw [remove'_cons_pos _ rfl, remove'_cons_pos _ rfl, remove'_idem, ih]
       · show remove' x (y :: remove' y (nodup' t)) = nodup' (remove' x (y :: t))
-        rw [if_neg hyx, if_neg hyx, remove'_comm hyx, ih]
+        rw [remove'_cons_neg _ hyx, remove'_cons_neg _ hyx]
+        show y :: remove' x (remove' y (nodup' t)) = y :: remove' y (nodup' (remove' x t))
+        rw [remove'_comm (Ne.symm hyx), ih]
 
 theorem mem_nodup' {α : Type} [DecidableEq α] (x : α) (l : List α) :
     x ∈ nodup' l ↔ x ∈ l := by
   induction l with
   | nil => simp [nodup']
   | cons y t ih =>
-      show (x ∈ y :: remove' y (nodup' t)) ↔ (x = y ∨ x ∈ t)
-      rw [List.mem_cons]
+      show (x ∈ y :: remove' y (nodup' t)) ↔ (x ∈ y :: t)
+      rw [List.mem_cons, List.mem_cons]
       constructor
       · rintro (rfl | h)
         · left; rfl
         · by_cases hxy : x = y
           · left; exact hxy
-          · right; exact ih.1 (mem_remove' hxy).1 h
+          · right; exact ih.1 ((mem_remove' hxy).1 h)
       · rintro (rfl | h)
         · left; rfl
         · by_cases hxy : x = y
@@ -561,6 +647,7 @@ theorem length_nodup'_le {α : Type} [DecidableEq α] (l : List α) :
   | cons y t ih =>
       show (y :: remove' y (nodup' t)).length ≤ (y :: t).length
       have h1 := length_remove'_le y (nodup' t)
+      rw [List.length_cons, List.length_cons]
       omega
 
 theorem remove'_append {α : Type} [DecidableEq α] {x : α} {a b : List α}
@@ -570,8 +657,7 @@ theorem remove'_append {α : Type} [DecidableEq α] {x : α} {a b : List α}
   | cons y t ih =>
       have hyn : y ≠ x := fun e => h (e ▸ List.Mem.head t)
       have hxt : x ∉ t := fun hx => h (List.Mem.tail y hx)
-      show (if y = x then remove' x (t ++ b) else y :: remove' x (t ++ b)) = y :: t ++ remove' x b
-      rw [if_neg hyn, ih hxt]
+      rw [List.cons_append, List.cons_append, remove'_cons_neg _ hyn, ih hxt]
 
 /-- THE KEY PREFIX LEMMA: appending to a duplicate-free list, then
     de-duplicating with first-occurrence keeping, yields the original
@@ -583,14 +669,11 @@ theorem dfl_append_prefix {α : Type} [DecidableEq α] :
   | nil => intro m _; exact ⟨nodup' m, rfl⟩
   | cons x t ih =>
       intro m ha
-      have h1 := ha
-      show x :: remove' x (nodup' t) = x :: t at h1
-      injection h1 with h2
+      have h1 : x :: remove' x (nodup' t) = x :: t := ha.symm
+      injection h1 with _ h2
       have hxn : x ∉ t := by
         intro hx
-        have h3 : x ∈ nodup' t := (mem_nodup' x t).2 hx
-        rw [← h2] at h3
-        exact notin_remove' _ h3
+        exact notin_remove' (nodup' t) (by rw [h2]; exact hx)
       have ht : t = nodup' t := by
         have hxn' : x ∉ nodup' t := fun hx => hxn ((mem_nodup' x t).1 hx)
         rw [remove'_notin hxn'] at h2
@@ -598,27 +681,23 @@ theorem dfl_append_prefix {α : Type} [DecidableEq α] :
       obtain ⟨r, hr⟩ := ih m ht
       refine ⟨remove' x r, ?_⟩
       show x :: remove' x (nodup' (t ++ m)) = x :: t ++ remove' x r
-      rw [hr, remove'_append hxn]
+      rw [hr, remove'_append hxn, List.cons_append]
 
 /-- The pigeonhole core: subsets of duplicate-free lists are no longer. -/
 theorem length_le_of_subset {α : Type} [DecidableEq α] {a b : List α}
     (ha : a = nodup' a) (hb : b = nodup' b)
     (h : ∀ x ∈ a, x ∈ b) : a.length ≤ b.length := by
-  induction a with
+  induction a generalizing b with
   | nil => simp
   | cons x t ih =>
       have hxn : x ∉ t := by
-        have h1 := ha
-        show x :: remove' x (nodup' t) = x :: t at h1
-        injection h1 with h2
+        have h1 : x :: remove' x (nodup' t) = x :: t := ha.symm
+        injection h1 with _ h2
         intro hx
-        have h3 : x ∈ nodup' t := (mem_nodup' x t).2 hx
-        rw [← h2] at h3
-        exact notin_remove' _ h3
+        exact notin_remove' (nodup' t) (by rw [h2]; exact hx)
       have ht : t = nodup' t := by
-        have h1 := ha
-        show x :: remove' x (nodup' t) = x :: t at h1
-        injection h1 with h2
+        have h1 : x :: remove' x (nodup' t) = x :: t := ha.symm
+        injection h1 with _ h2
         have hxn' : x ∉ nodup' t := fun hx => hxn ((mem_nodup' x t).1 hx)
         rw [remove'_notin hxn'] at h2
         exact h2.symm
@@ -629,9 +708,11 @@ theorem length_le_of_subset {α : Type} [DecidableEq α] {a b : List α}
         have hyn : y ≠ x := fun e => hxn (e ▸ hy)
         exact (mem_remove' hyn).2 hyb
       have hb' : remove' x b = nodup' (remove' x b) := by
-        rw [← remove'_dfl, hb]
+        exact (congrArg (remove' x) hb).trans (remove'_dfl x b)
       have hle := ih ht hb' hrem
       have hlr := length_remove' hxb
+      have hp := List.length_pos_of_mem hxb
+      rw [List.length_cons]
       omega
 
 /- ---- list splitting at an index (structural; no List.take/drop names) ----/
@@ -645,16 +726,14 @@ theorem split_at {α : Type} (l : List α) (i : Nat) (h : i < l.length) :
     ∃ l₁ r l₂, l = l₁ ++ r :: l₂ ∧ l₁.length = i ∧ dropIx l i = l₁ ++ l₂ ∧ r = l.get ⟨i, h⟩ := by
   induction i generalizing l with
   | zero =>
-      intro l h
       cases l with
       | nil => simp at h
       | cons x t => exact ⟨[], x, t, rfl, rfl, rfl, rfl⟩
   | succ n ih =>
-      intro l h
       cases l with
-      | nil => simp at h
+      | nil => exact absurd h (Nat.not_lt_zero _)
       | cons x t =>
-          have hn : n < t.length := by simpa using h
+          have hn : n < t.length := Nat.lt_of_succ_lt_succ h
           obtain ⟨l₁, r, l₂, he, hl1, hd, hget⟩ := ih t hn
           refine ⟨x :: l₁, r, l₂, ?_, ?_, ?_, ?_⟩
           · rw [he]; rfl
@@ -675,15 +754,16 @@ theorem length_dropIx {α : Type} (l : List α) (i : Nat) (h : i < l.length) :
 theorem dropIx_sub {α : Type} (l : List α) (i : Nat) :
     ∀ x ∈ dropIx l i, x ∈ l := by
   induction l generalizing i with
-  | nil => intro i x hx; simp [dropIx] at hx
+  | nil => intro x hx; simp [dropIx] at hx
   | cons y t ih =>
-      intro i x hx
+      intro x hx
       cases i with
       | zero => exact List.Mem.tail y hx
       | succ n =>
-          rcases hx with hx | hx
-          · exact List.Mem.head _
-          · exact List.Mem.tail y (ih n _ hx)
+          have hx' : x ∈ y :: dropIx t n := hx
+          rcases List.mem_cons.1 hx' with hx | hx
+          · rw [hx]; exact List.Mem.head _
+          · exact List.Mem.tail y (ih n x hx)
 
 /- ---- the evaluator ----/
 
@@ -695,7 +775,17 @@ def atomsOf : Prog → List Goal
 /-- Finite universe of derivable atoms: termination is data. -/
 def universe_ (P : Prog) : List Goal := nodup' (seed ++ atomsOf P)
 
-theorem universe_fix (P : Prog) : universe_ P = nodup' (universe_ P) := rfl
+theorem nodup'_idem {α : Type} [DecidableEq α] (l : List α) :
+    nodup' (nodup' l) = nodup' l := by
+  induction l with
+  | nil => rfl
+  | cons y t ih =>
+      show y :: remove' y (nodup' (remove' y (nodup' t))) = y :: remove' y (nodup' t)
+      rw [remove'_dfl y (remove' y (nodup' t)), remove'_idem y (nodup' t),
+        ← remove'_dfl y (nodup' t), ih]
+
+theorem universe_fix (P : Prog) : universe_ P = nodup' (universe_ P) :=
+  (nodup'_idem _).symm
 
 theorem seed_sub_universe (P : Prog) : ∀ x ∈ seed, x ∈ universe_ P := by
   intro x hx
@@ -714,12 +804,12 @@ theorem memAll_false {db : List Goal} {g : Goal} {l : List Goal}
   | nil => simp at h1
   | cons a t ih =>
       show (decide (a ∈ db) && memAll db t) = false
-      rcases h1 with rfl | h1
-      · simp only [h2, decide_false, Bool.false_and]
-      · by_cases ha : a ∈ db
-        · simp only [ha, decide_true, Bool.true_and]
+      by_cases ha : a ∈ db
+      · rcases List.mem_cons.1 h1 with h1 | h1
+        · exact absurd (h1 ▸ ha) h2
+        · rw [decide_eq_true ha, Bool.true_and]
           exact ih h1
-        · simp only [ha, decide_false, Bool.false_and]
+      · rw [decide_eq_false ha, Bool.false_and]
 
 theorem memAll_true {db : List Goal} {l : List Goal}
     (h : ∀ g ∈ l, g ∈ db) : memAll db l = true := by
@@ -727,7 +817,7 @@ theorem memAll_true {db : List Goal} {l : List Goal}
   | nil => rfl
   | cons a t ih =>
       show (decide (a ∈ db) && memAll db t) = true
-      simp only [h a (List.Mem.head t), decide_true, Bool.true_and]
+      rw [decide_eq_true (h a (List.Mem.head t)), Bool.true_and]
       exact ih (fun g hg => h g (List.Mem.tail a hg))
 
 theorem memAll_spec {db : List Goal} {l : List Goal}
@@ -736,9 +826,10 @@ theorem memAll_spec {db : List Goal} {l : List Goal}
   | nil => intro g hg; simp at hg
   | cons a t ih =>
       intro g hg
-      have h2 := (Bool.and_eq_true _ _).1 h
-      rcases hg with hg | hg
-      · exact of_decide_eq_true h2.1
+      have h2 : (decide (a ∈ db) && memAll db t) = true := h
+      simp only [Bool.and_eq_true] at h2
+      rcases List.mem_cons.1 hg with hg | hg
+      · rw [hg]; exact of_decide_eq_true h2.1
       · exact ih h2.2 _ hg
 
 theorem applicable_mono {db db' : List Goal} (h : ∀ x ∈ db, x ∈ db')
@@ -771,18 +862,19 @@ theorem closureStep_sub_universe (P : Prog) (db : List Goal)
     ∀ x ∈ closureStep P db, x ∈ universe_ P := by
   intro x hx
   rw [closureStep, mem_nodup'] at hx
+  have key : ∀ Q : Prog, ∀ y ∈ Q.foldr (stepAdd db) [], y ∈ atomsOf Q := by
+    intro Q
+    induction Q with
+    | nil => intro y hy; simp [List.foldr] at hy
+    | cons r rs ih =>
+        intro y hy
+        have hy2 : y ∈ stepAdd db r (rs.foldr (stepAdd db) []) := hy
+        rcases stepAdd_mem hy2 with ⟨_, he⟩ | hy'
+        · rw [he]; exact List.Mem.head _
+        · exact List.mem_cons.2 (Or.inr (List.mem_append.2 (Or.inr (ih y hy'))))
   rcases (List.mem_append.1 hx) with hx | hx
   · exact hdb x hx
-  · induction P with
-    | nil => simp [List.foldr] at hx
-    | cons r rs ih =>
-        simp only [List.foldr] at hx
-        rcases (stepAdd_mem hx) with ⟨_, rfl⟩ | hx
-        · apply (mem_nodup' x (seed ++ atomsOf (r :: rs))).2
-          apply List.mem_append.2; right
-          show x ∈ r.head :: (r.body ++ atomsOf rs)
-          exact List.Mem.head _
-        · exact ih hx
+  · exact (mem_nodup' x (seed ++ atomsOf P)).2 (List.mem_append.2 (Or.inr (key P x hx)))
 
 theorem closureStep_infl (P : Prog) (db : List Goal) :
     ∀ x ∈ db, x ∈ closureStep P db := by
@@ -795,27 +887,24 @@ theorem closureStep_monotone {P} {db db'} (h : ∀ x ∈ db, x ∈ db') :
   intro x hx
   rw [closureStep] at hx ⊢
   rw [mem_nodup'] at hx ⊢
+  have key : ∀ Q : Prog, ∀ y ∈ Q.foldr (stepAdd db) [], y ∈ Q.foldr (stepAdd db') [] := by
+    intro Q
+    induction Q with
+    | nil => intro y hy; simp [List.foldr] at hy
+    | cons r rs ih =>
+        intro y hy
+        have hy2 : y ∈ stepAdd db r (rs.foldr (stepAdd db) []) := hy
+        show y ∈ stepAdd db' r (rs.foldr (stepAdd db') [])
+        rcases stepAdd_mem hy2 with ⟨ha, he⟩ | hy'
+        · rw [he]; unfold stepAdd; rw [if_pos (applicable_mono h r ha)]
+          exact List.Mem.head _
+        · unfold stepAdd
+          by_cases hb : applicable db' r = true
+          · rw [if_pos hb]; exact List.Mem.tail _ (ih y hy')
+          · rw [if_neg hb]; exact ih y hy'
   rcases (List.mem_append.1 hx) with hx | hx
   · exact List.mem_append.2 (Or.inl (h x hx))
-  · right
-    induction P with
-    | nil => simp [List.foldr] at hx
-    | cons r rs ih =>
-        simp only [List.foldr] at hx ⊢
-        by_cases ha : applicable db r = true
-        · have hb := applicable_mono h r ha
-          simp only [ha, hb, if_true, List.mem_cons] at hx ⊢
-          rcases hx with rfl | hx
-          · exact List.Mem.head _
-          · right; exact ih hx
-        · have hn : applicable db r = false := by
-            cases hbb : applicable db r with
-            | true  => simp_all
-            | false => rfl
-          simp only [hn, if_false] at hx
-          by_cases hb : applicable db' r = true
-          · simp only [hb, if_true, List.mem_cons]; right; exact ih hx
-          · simp only [hb, if_false]; exact ih hx
+  · exact List.mem_append.2 (Or.inr (key P x hx))
 
 def closure : Nat → Prog → List Goal → List Goal
   | 0,     _, db => db
@@ -825,7 +914,7 @@ theorem closure_infl (P : Prog) : ∀ fuel db, ∀ x ∈ db, x ∈ closure fuel 
   intro fuel
   induction fuel with
   | zero => intro db x hx; exact hx
-  | succ n ih =>
+  | succ _ ih =>
       intro db x hx
       exact ih _ x (closureStep_infl P db x hx)
 
@@ -837,17 +926,9 @@ theorem closure_sub_universe (P : Prog) :
   | zero => intro db h x hx; exact h x hx
   | succ n ih =>
       intro db h x hx
-      apply ih
-      exact closureStep_sub_universe P db h
+      exact ih _ (closureStep_sub_universe P db h) x hx
 
 theorem seed_fix : seed = nodup' seed := rfl
-
-theorem closure_fixpoint (P : Prog) : ∀ fuel,
-    closure fuel P seed = nodup' (closure fuel P seed) := by
-  intro fuel
-  cases fuel with
-  | zero => exact seed_fix
-  | succ n => rfl
 
 /-- Iteration and one step commute. -/
 theorem closureStep_closure : ∀ b (P : Prog) (db : List Goal),
@@ -860,16 +941,27 @@ theorem closureStep_closure : ∀ b (P : Prog) (db : List Goal),
       show closure n P (closureStep P (closureStep P db)) =
            closureStep P (closure n P (closureStep P db))
       rw [ih]
-      rfl
+
+theorem closure_fixpoint (P : Prog) : ∀ fuel,
+    closure fuel P seed = nodup' (closure fuel P seed) := by
+  intro fuel
+  cases fuel with
+  | zero => exact seed_fix
+  | succ n =>
+      show closure n P (closureStep P seed) = nodup' (closure n P (closureStep P seed))
+      rw [closureStep_closure]
+      exact (nodup'_idem _).symm
 
 /-- Iteration splits: closure (a+b) = closure a ∘ closure b. -/
 theorem closure_add : ∀ a b (P : Prog) (db : List Goal),
     closure (a + b) P db = closure a P (closure b P db) := by
   intro a
   induction a with
-  | zero => intro b P db; rfl
+  | zero => intro b P db; rw [Nat.zero_add]; rfl
   | succ n ih =>
       intro b P db
+      have e : n + 1 + b = (n + b) + 1 := by omega
+      rw [e]
       show closure (n + b) P (closureStep P db) = closure n P (closureStep P (closure b P db))
       rw [ih, closureStep_closure]
 
@@ -882,7 +974,7 @@ theorem closure_succ_append (P : Prog) : ∀ k,
   | zero =>
       show ∃ m, closureStep P seed = seed ++ m
       exact dfl_append_prefix seed (P.foldr (stepAdd seed) []) seed_fix
-  | succ n ih =>
+  | succ n _ =>
       have hfix := closure_fixpoint P (n + 1)
       obtain ⟨r, hr⟩ := dfl_append_prefix (closure (n + 1) P seed)
                         (P.foldr (stepAdd (closure (n + 1) P seed)) []) hfix
@@ -896,8 +988,9 @@ def bound (P : Prog) : Nat := (universe_ P).length + 1
 
 theorem exists_fixpoint (P : Prog) :
     ∃ k, k < bound P ∧ closure k P seed = closure (k + 1) P seed := by
-  by_contra h
-  push_neg at h
+  refine Decidable.byContradiction (fun h => ?_)
+  have h' : ∀ k, k < bound P → closure k P seed ≠ closure (k + 1) P seed :=
+    fun k hk e => h ⟨k, hk, e⟩
   have hpre := closure_succ_append P
   have hlt : ∀ k, k < bound P →
       (closure k P seed).length < (closure (k + 1) P seed).length := by
@@ -906,11 +999,11 @@ theorem exists_fixpoint (P : Prog) :
     have hrn : r ≠ [] := by
       intro e
       rw [e, List.append_nil] at hr
-      exact h k hk hr.symm
+      exact h' k hk hr.symm
     rw [hr]
     cases r with
     | nil => contradiction
-    | cons x xs => rw [List.length_append]; omega
+    | cons x xs => rw [List.length_append, List.length_cons]; omega
   have hge : ∀ k, k ≤ bound P → k ≤ (closure k P seed).length := by
     intro k hk
     induction k with
@@ -923,6 +1016,7 @@ theorem exists_fixpoint (P : Prog) :
     closure_sub_universe P (bound P) seed (seed_sub_universe P)
   have hle := length_le_of_subset (closure_fixpoint P (bound P)) (universe_fix P) hU
   have hbig := hge (bound P) (Nat.le_refl _)
+  have hb : bound P = (universe_ P).length + 1 := rfl
   omega
 
 /-- A fixpoint equality at n propagates to every m ≥ n. -/
@@ -973,8 +1067,11 @@ theorem foldr_skip {α β : Type} (F : α → β → β) (l₁ l₂ : List α) (
     (init : β) (h : ∀ acc, F r acc = acc) :
     (l₁ ++ r :: l₂).foldr F init = (l₁ ++ l₂).foldr F init := by
   induction l₁ with
-  | nil => simp only [List.foldr]; rw [h]
-  | cons a t ih => simp only [List.foldr, List.cons_append, ih]
+  | nil => rw [List.nil_append, List.nil_append]; exact h _
+  | cons a t ih =>
+      rw [List.cons_append, List.cons_append]
+      show F a ((t ++ r :: l₂).foldr F init) = F a ((t ++ l₂).foldr F init)
+      rw [ih]
 
 theorem closureStep_erase_dead (P : Prog) (i : Nat) (hi : i < P.length)
     (hd : ∃ g ∈ (P.get ⟨i, hi⟩).body, g ∉ outputs P)
@@ -983,14 +1080,12 @@ theorem closureStep_erase_dead (P : Prog) (i : Nat) (hi : i < P.length)
   obtain ⟨g, hgm, hgd⟩ := hd
   have hgnodb : g ∉ db := fun h => hgd (hdb g h)
   have hap : applicable db (P.get ⟨i, hi⟩) = false := memAll_false hgm hgnodb
-  obtain ⟨l₁, r, l₂, he, hl1, hd2, hget⟩ := split_at P i hi
+  obtain ⟨l₁, r, l₂, he, _, hd2, hget⟩ := split_at P i hi
   subst he
   have hap' : applicable db r = false := by rw [hget]; exact hap
   show nodup' (db ++ (l₁ ++ r :: l₂).foldr (stepAdd db) []) =
-       nodup' (db ++ dropIx (l₁ ++ r :: l₂) i).foldr (stepAdd db) [])
-  rw [hd2]
-  congr 1
-  exact foldr_skip (stepAdd db) l₁ l₂ r [] (fun acc => by simp [hap'])
+       nodup' (db ++ (dropIx (l₁ ++ r :: l₂) i).foldr (stepAdd db) [])
+  rw [hd2, foldr_skip (stepAdd db) l₁ l₂ r [] (fun acc => by simp [stepAdd, hap'])]
 
 theorem closure_erase_dead (P : Prog) (i : Nat) (hi : i < P.length)
     (hd : ∃ g ∈ (P.get ⟨i, hi⟩).body, g ∉ outputs P) :
@@ -1006,23 +1101,25 @@ theorem closure_erase_dead (P : Prog) (i : Nat) (hi : i < P.length)
       apply ih
       intro x hx
       have h1 := closureStep_monotone hdb x hx
-      rwa [outputs_fix P] at h1
+      have h2 := closureStep_erase_dead P i hi hd (outputs P) (fun y hy => hy)
+      rw [← h2, outputs_fix P] at h1
+      exact h1
 
 theorem atomsOf_mono_drop (P : Prog) (i : Nat) (hi : i < P.length) :
     ∀ x ∈ atomsOf (dropIx P i), x ∈ atomsOf P := by
   induction P generalizing i with
-  | nil => intro i hi x hx; simp [dropIx] at hi
+  | nil => exact absurd hi (Nat.not_lt_zero _)
   | cons r rs ih =>
-      intro i hi x hx
+      intro x hx
       cases i with
       | zero => exact List.Mem.tail r.head (List.mem_append.2 (Or.inr hx))
       | succ n =>
-          have hin : n < rs.length := by simpa using hi
+          have hin : n < rs.length := Nat.lt_of_succ_lt_succ hi
           simp only [dropIx, atomsOf, List.mem_cons, List.mem_append] at hx ⊢
           rcases hx with rfl | h | h
           · left; rfl
           · right; left; exact h
-          · right; right; exact ih n hin h
+          · right; right; exact ih n hin x h
 
 theorem universe_mono (P : Prog) (i : Nat) (hi : i < P.length) :
     ∀ x ∈ universe_ (dropIx P i), x ∈ universe_ P := by
@@ -1071,7 +1168,7 @@ def Improvement (P P' : Prog) : Prop :=
 theorem dropIx_improvement (P : Prog) (i : Nat) (hi : i < P.length)
     (hd : ∃ g ∈ (P.get ⟨i, hi⟩).body, g ∉ outputs P) :
     Improvement P (dropIx P i) :=
-  ⟨outputs_erase_dead P i hi hd, length_dropIx P i hi, cost_le P i hi hd⟩
+  ⟨outputs_erase_dead P i hi hd, by have h1 := length_dropIx P i hi; omega, cost_le P i hi hd⟩
 
 /- ==================== Layer 4: the Gödel machine gate ======================= -/
 
@@ -1126,6 +1223,7 @@ theorem install_improves (P P' : Prog) (g : Nat) (h : install P g = some P') :
   | none => rw [hg] at h; simp at h
   | some P'' =>
     rw [hg] at h
+    dsimp only at h
     cases ht : tryAll P P'' P.length (Nat.le_refl _) with
     | none => rw [ht] at h; simp at h
     | some prf =>
@@ -1138,7 +1236,7 @@ theorem install_improves (P P' : Prog) (g : Nat) (h : install P g = some P') :
 
 def improve : Nat → Prog → List Nat → Prog
   | 0,        P, _  => P
-  | fuel + 1, P, [] => P
+  | _ + 1, P, [] => P
   | fuel + 1, P, c :: cs =>
       match install P c with
       | some P' => improve fuel P' cs
@@ -1157,17 +1255,17 @@ theorem improve_never_regresses : ∀ fuel P cs,
       | nil => exact ⟨Nat.le_refl _, rfl⟩
       | cons c t =>
           cases hi : install P c with
-          | none => rw [hi]; exact ih P t
+          | none => simp only [improve, hi]; exact ih P t
           | some P' =>
-            rw [hi]
+            simp only [improve, hi]
             obtain ⟨h1, h2⟩ := ih P' t
             obtain ⟨ho, hl, _⟩ := install_improves P P' c hi
-            exact ⟨Nat.le_trans h1 hl, by rw [h2, ho]⟩
+            exact ⟨Nat.le_trans h1 (Nat.le_of_lt hl), by rw [h2, ho]⟩
 
 /- ================================== demo ==================================== -/
 
-def prog0 : Prog := [ ⟨Goal.atom 1 [0, 1], [Goal.atom 0 [0, 1]]⟩,
-                      ⟨Goal.atom 2 [0],     [Goal.atom 9 [0]]⟩ ]
+def prog0 : Prog := [ ⟨Goal.atom 1 [], []⟩,
+                      ⟨Goal.atom 2 [], [Goal.atom 0 []]⟩ ]
 
 /-- The candidate rewrite, delivered as a Gödel number. -/
 def prog1 : Prog := dropIx prog0 1

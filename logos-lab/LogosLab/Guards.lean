@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-SnapKitty-Opaque-1.0
+-- Copyright Ahmad Ali Parr
 /-
   LogosLab.Guards — decidable integrity-constraint guards.
   See MEASURES.md §6. Guards are Bool-valued functions evaluated

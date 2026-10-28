@@ -1,0 +1,16 @@
+digraph G {
+  graph [fontname="DejaVu Sans", bgcolor="white", pad=0.35, dpi=200]
+  node [fontname="DejaVu Sans", fontsize=13, shape=box, style="rounded,filled", fillcolor="#eef3fb", color="#3b5b8c", penwidth=1.4, margin="0.2,0.12"]
+  edge [fontname="DejaVu Sans", fontsize=11, color="#3b5b8c", penwidth=1.4, arrowsize=0.9]
+  node [shape=plain, style=""]
+  t [label=<
+  <table border="0" cellborder="1" cellspacing="0" cellpadding="9" color="#3b5b8c">
+    <tr><td colspan="6" border="0" bgcolor="white"><font point-size="16"><b>pair a b = 2<sup>a</sup> × (2b + 1)</b></font></td></tr>
+    <tr><td bgcolor="#3b5b8c"><font color="white"><b>a \ b</b></font></td><td bgcolor="#3b5b8c"><font color="white"><b>b = 0</b></font></td><td bgcolor="#3b5b8c"><font color="white"><b>b = 1</b></font></td><td bgcolor="#3b5b8c"><font color="white"><b>b = 2</b></font></td><td bgcolor="#3b5b8c"><font color="white"><b>b = 3</b></font></td><td bgcolor="#3b5b8c"><font color="white"><b>twos in the code</b></font></td></tr>
+    <tr><td bgcolor="#eef3fb"><b>a = 0</b></td><td>1</td><td>3</td><td>5</td><td>7</td><td bgcolor="#fff6e0">0</td></tr>
+    <tr><td bgcolor="#eef3fb"><b>a = 1</b></td><td>2</td><td>6</td><td>10</td><td>14</td><td bgcolor="#fff6e0">1</td></tr>
+    <tr><td bgcolor="#eef3fb"><b>a = 2</b></td><td>4</td><td>12</td><td>20</td><td>28</td><td bgcolor="#fff6e0">2</td></tr>
+    <tr><td bgcolor="#eef3fb"><b>a = 3</b></td><td>8</td><td>24</td><td>40</td><td>56</td><td bgcolor="#fff6e0">3</td></tr>
+    <tr><td colspan="6" border="0" bgcolor="white" align="left"><font point-size="12">Every positive number appears exactly once.  Read it backwards:<br align="left"/>  <b>44</b> = 2<sup>2</sup> × 11, so a = 2 (count the twos) and b = (11 − 1) / 2 = 5.<br align="left"/>  Syntax uses the first slot as a tag:  <b>var n</b> = pair 0 n  ·  <b>con c</b> = pair 1 c  ·  <b>app</b> = pair 2 (…)<br align="left"/>  So  var 3 = 7  and  con 2 = 10.<br align="left"/></font></td></tr>
+  </table>>];
+}

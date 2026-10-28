@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-SnapKitty-Opaque-1.0
+-- Copyright Ahmad Ali Parr
 /-
   LogosLab.Deriv — derivation trees, the solver, and the kernel
   checker (trace replay). Phase 2.

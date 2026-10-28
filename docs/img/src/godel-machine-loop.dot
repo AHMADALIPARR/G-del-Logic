@@ -1,0 +1,22 @@
+digraph G {
+  rankdir=TB; nodesep=0.6; ranksep=0.6;
+  graph [fontname="DejaVu Sans", bgcolor="white", pad=0.35, dpi=200]
+  node [fontname="DejaVu Sans", fontsize=13, shape=box, style="rounded,filled", fillcolor="#eef3fb", color="#3b5b8c", penwidth=1.4, margin="0.2,0.12"]
+  edge [fontname="DejaVu Sans", fontsize=11, color="#3b5b8c", penwidth=1.4, arrowsize=0.9]
+  cand [label=<<b>1. Candidate rewrite</b><br/>a smaller program P'<br/><font point-size="11" color="#555555">e.g. drop the rule that needs atom 9</font>>];
+  num  [label=<<b>2. Gödel number g</b><br/>the whole program<br/>as one natural number>, fillcolor="#fff6e0", color="#b07a10"];
+  dec  [label=<<b>3. Decode</b><br/>g becomes P' again<br/><font point-size="11" color="#555555">the round trip is proved</font>>];
+  gate [label=<<b>4. The gate: is there a proof?</b><br align="left"/>  ✔ same outputs as P<br align="left"/>  ✔ strictly smaller<br align="left"/>  ✔ cost not higher<br align="left"/>>, fillcolor="#e6f4ea", color="#2e7d4f", penwidth=2.2];
+  inst [label=<<b>Install</b><br/>P' replaces P>, fillcolor="#d4edda", color="#2e7d4f"];
+  rej  [label=<<b>Reject</b><br/>P stays as it is>, fillcolor="#fbe3e1", color="#b3392f"];
+  nxt  [label=<<b>5. Next candidate</b><br/><font point-size="11" color="#555555">improve works through its list</font>>, fillcolor="#f2f2f2", color="#777777"];
+  {rank=same; cand; num; dec}
+  {rank=same; inst; gate; rej}
+  cand -> num [label=" encode"];
+  num -> dec;
+  dec -> gate;
+  gate -> inst [label="  proof found  ", color="#2e7d4f", fontcolor="#2e7d4f"];
+  gate -> rej  [label=" no proof ", color="#b3392f", fontcolor="#b3392f"];
+  inst -> nxt; rej -> nxt;
+  nxt -> cand [style=dashed, color="#777777", constraint=false];
+}
